@@ -26,10 +26,6 @@ import java.util.HashMap;
 import javax.swing.JOptionPane;
 import javax.swing.Timer;
 
-/**
- *
- * @author yisus
- */
 public class Compilador extends javax.swing.JFrame {
 
     private String title;
@@ -51,10 +47,10 @@ public class Compilador extends javax.swing.JFrame {
     }
 
     private void init() {
-        title = "Compiler";
+        title = "Compilador UMG";
         setLocationRelativeTo(null);
         setTitle(title);
-        directorio = new Directory(this, jtpCode, title, ".comp");
+        directorio = new Directory(this, jtpCode, title, ".mlp");
         addWindowListener(new WindowAdapter() {// Cuando presiona la "X" de la esquina superior derecha
             @Override
             public void windowClosing(WindowEvent e) {
@@ -346,7 +342,139 @@ public class Compilador extends javax.swing.JFrame {
     private void syntacticAnalysis() {
         Grammar gramatica = new Grammar(tokens, errors);
 
-        /* Mostrar gramáticas */
+        /**Eliminación de errores**/
+        gramatica.delete(new String[]{"ERROR","ERROR1"},1);
+        
+        /*Suma de variables y valores*/
+        gramatica.group("OPERACION_NUM","NUMERO OPERADOR_ARITMETICO NUMERO",true);
+        gramatica.group("OPERACION_VAR","VARIABLE OPERADOR_ARITMETICO VARIABLE",true);
+        gramatica.group("OPERACION_VAR","VARIABLE OPERADOR_ARITMETICO NUMERO",true);
+        gramatica.group("OPERACION_VAR","NUMERO OPERADOR_ARITMETICO VARIABLE",true);
+        gramatica.group("ERROR_OPERACION_VAR","IDENTIFICADOR OPERADOR_ARITMETICO IDENTIFICADOR", true,
+                17,"ERROR SINTÁCTICO {}, NO SE PUEDEN OPERAR IDENTIFICADORES [#,%]");
+        gramatica.group("ERROR_OPERACION_VAR","IDENTIFICADOR OPERADOR_ARITMETICO VARIABLE", true,
+                18,"ERROR SINTÁCTICO {}, NO SE PUEDEN OPERAR IDENTIFICADORES [#,%]");
+        gramatica.group("ERROR_OPERACION_VAR","VARIABLE OPERADOR_ARITMETICO IDENTIFICADOR", true,
+                19,"ERROR SINTÁCTICO {}, NO SE PUEDEN OPERAR IDENTIFICADORES [#,%]");
+        
+        gramatica.group("OPERACION_VAR_EXPR","EXPRESION OPERACION_VAR", true);
+        gramatica.group("VAR_ERROR","CORCHETE_A OPERACION_VAR CORCHETE_C",true,
+                16,"ERROR SINTÁCTICO {}, SE ESPERABA LA DECLARACIÓN EXPRESION [#,%]");
+        gramatica.group("VAR_ERROR","LLAVE_A OPERACION_VAR CORCHETE_C",true,
+                15,"ERROR SINTÁCTICO {}, UTILIZACIÓN DE AGRUPADORES INCORRECTA [#,%]");
+        gramatica.group("VAR_ERROR","CORCHETE_A OPERACION_VAR LLAVE_C",true,
+                14,"ERROR SINTÁCTICO {}, UTILIZACIÓN DE AGRUPADORES INCORRECTA [#,%]");
+        gramatica.group("OPERACION_VAR_A","CORCHETE_A OPERACION_VAR_EXPR CORCHETE_C", true);
+        gramatica.group("VAR_ERROR","LLAVE_A OPERACION_VAR_EXPR LLAVE_C",true,
+                13,"ERROR SINTÁCTICO {}, SE ESPERABAN CORCHETES COMO SIGNOS DE AGRUPACIÓN [#,%]");
+        
+        /*Declaración de variables*/
+        gramatica.group("VARC","(OPERADOR_ASIGNACION IDENTIFICADOR OPERACION_VAR_A)",true);
+        gramatica.group("VAR_ERROR","IDENTIFICADOR IDENTIFICADOR OPERACION_VAR_A",true,
+                18,"ERROR SINTÁCTICO {}, SE ESPERABA UN OPERADOR DE ASIGNACIÓN [#,%]");
+        gramatica.group("VAR","(OPERADOR_ASIGNACION IDENTIFICADOR NUMERO)", true);
+        gramatica.group("VAR","(OPERADOR_ASIGNACION IDENTIFICADOR STRING)", true);
+        gramatica.group("VAR_ERROR","IDENTIFICADOR IDENTIFICADOR NUMERO", true,
+                3,"ERROR SINTÁCTICO, SE ESPERABA LA ASIGNACIÓN DE UN VALOR [#,%]");
+        gramatica.finalLineColumn();
+        gramatica.group("VAR_ERROR","IDENTIFICADOR IDENTIFICADOR IDENTIFICADOR", true,
+                4,"ERROR SINTÁCTICO, SE ESPERABA UNA DECLARACIÓN O UNA ASIGNACIÓN [#,%]");
+        gramatica.finalLineColumn();
+        gramatica.group("VAR_ERROR","IDENTIFICADOR IDENTIFICADOR NUMERO", true,
+                5,"ERROR SINTÁCTICO, SE ESPERABA LA ASIGNACIÓN DE UN VALOR [#,%]");
+        gramatica.finalLineColumn();
+        gramatica.group("VAR_ERROR","IDENTIFICADOR NUMERO",true,
+                6,"ERROR SINTÁCTICO, SE ESPERABA UNA DECLARACIÓN DEL IDENTIFICADOR O UNA ASIGNACIÓN DE VALOR [#,%]");
+        gramatica.finalLineColumn();
+        /*Impresion de datos por la función puts*/
+        gramatica.group("IMPRESION_DATOS","IMPRIMIR NUMERO", true);
+        gramatica.group("IMPRESION_DATOS","IMPRIMIR STRING", true);
+        gramatica.group("IMPRESION_DATOS","IMPRIMIR VARIABLE", true);
+        gramatica.group("IMPRESION_ERROR","IMPRIMIR IMPRIMIR", true,
+                7,"ERROR SINTÁCTICO {}, DECLARACIÓN DE COMANDO DE IMPRESIÓN INCORRECTO [#,%]");
+        gramatica.finalLineColumn();
+        gramatica.group("IMPRESION_ERROR","IMPRIMIR IDENTIFICADOR", true,
+                8,"ERROR SINTÁCTICO {}, NO SE PUEDE IMPRIMIR UN IDENTIFICADOR [#,%]");
+        gramatica.finalLineColumn();
+        gramatica.group("IMPRESION_ERROR","IMPRIMIR OPERADOR_ASIGNACION", true,
+                9,"ERROR SINTÁCTICO {}, SE ESPERABA UNA IMPRESIÓN DE DATOS O UNA ASIGNACIÓN DE VALOR [#,%]");
+        gramatica.finalLineColumn();
+        gramatica.group("IMPRESION_ERROR","IMPRIMIR IMPRIMIR", true,
+                10,"ERROR SINTÁCTICO {}, SE ESPERABA UN VALOR PARA IMPRIMIR [#,%]");
+        gramatica.finalLineColumn();
+        gramatica.group("IMPRESION_ERROR","IMPRIMIR IDENTIFICADOR", true,
+                11,"ERROR SINTÁCTICO {}, NO SE PUEDE IMPRIMIR UN IDENTIFICADOR [#,%]");
+        gramatica.finalLineColumn();
+        
+        gramatica.group("IMPRESION_ERROR","IMPRIMIR IDENTIFICADOR", true,
+                12,"ERROR SINTÁCTICO {}, NO SE PUEDE IMPRIMIR UN IDENTIFICADOR [#,%]");
+        gramatica.finalLineColumn();
+        
+                /*---------Sentencia IF---------*/
+        /*Comparacion*/
+        gramatica.group("COMP","NUMERO OPERADOR_RELACIONAL NUMERO",true);
+        gramatica.group("COMP","VARIABLE OPERADOR_RELACIONAL NUMERO",true);
+        gramatica.group("COMP","NUMERO OPERADOR_RELACIONAL VARIABLE",true);
+        gramatica.group("COMP","VARIABLE OPERADOR_RELACIONAL VARIABLE",true);
+        gramatica.group("ERROR_COMP","IDENTIFICADOR OPERADOR_RELACIONAL IDENTIFICADOR",true,
+                20,"ERROR SINTÁCTICO {}, NO SE PUEDEN COMPARAR IDENTIFICADORES [#,%]");
+        gramatica.group("ERROR_COMP","IDENTIFICADOR OPERADOR_RELACIONAL NUMERO",true,
+                20,"ERROR SINTÁCTICO {}, NO SE PUEDEN COMPARAR IDENTIFICADORES [#,%]");
+        gramatica.group("ERROR_COMP","NUMERO OPERADOR_RELACIONAL IDENTIFICADOR",true,
+                20,"ERROR SINTÁCTICO {}, NO SE PUEDEN COMPARAR IDENTIFICADORES [#,%]");
+        gramatica.group("ERROR_COMP","IDENTIFICADOR OPERADOR_RELACIONAL VARIABLE",true,
+                20,"ERROR SINTÁCTICO {}, NO SE PUEDEN COMPARAR IDENTIFICADORES [#,%]");
+        gramatica.group("ERROR_COMP","VARIABLE OPERADOR_RELACIONAL IDENTIFICADOR",true,
+                20,"ERROR SINTÁCTICO {}, NO SE PUEDEN COMPARAR IDENTIFICADORES [#,%]");
+        /*Agrupación de comparaciones*/
+        gramatica.group("COMP_AG","LLAVE_A COMP LLAVE_C",true);
+        gramatica.group("ERROR_COMP_AG","COMP LLAVE_C",true,
+                21,"ERROR SINTÁCTICO {}, SE ESPERABA UNA LLAVE DE APERTURA [#,%]");
+        gramatica.group("ERROR_COMP_AG","LLAVE_A COMP",true,
+                21,"ERROR SINTÁCTICO {}, SE ESPERABA UNA LLAVE DE CIERRE [#,%]");
+        gramatica.group("ERROR_COMP_AG","CORCHETE_A COMP CORCHETE_C",true,
+                21,"ERROR SINTÁCTICO {}, SE UTILIZÓ UN AGRUPADOR INCORRECTO [#,%]");
+        gramatica.group("ERROR_COMP_AG","CORCHETE_A COMP LLAVE_C",true,
+                21,"ERROR SINTÁCTICO {}, SE UTILIZÓ UN AGRUPADOR INCORRECTO [#,%]");
+        gramatica.group("ERROR_COMP_AG","LLAVE_A COMP CORCHETE_C",true,
+                21,"ERROR SINTÁCTICO {}, SE UTILIZÓ UN AGRUPADOR INCORRECTO [#,%]");
+        
+        /*Asignación de comparaciones a estructuras*/
+        gramatica.group("COMP_ESTRUC","(IF | WHILE) COMP_AG",true);
+        gramatica.group("COMP_ESTRUC_ERROR","COMP_AG (IF | WHILE)",true,
+                22,"ERROR SINTÁCTIVO {}, LA DECLARACIÓN DE LA ESTRUCTURA NO ES CORRECTA [#,%]");
+        
+        /*Declaración de cuerpos para estructuras*/
+        gramatica.group("CUERPO","(NUMERO | OPERACION_VAR_A)",true);
+        
+        /*Apertura y cierre de estructuras*/
+        gramatica.group("COMP_ESTRUC_AG","COMP_ESTRUC LLAVE_A CUERPO LLAVE_C",true);
+        
+        /*Declaración de estructura Switch*/
+        gramatica.group("ESTRUC_SW","SWITCH (OPERACION_NUM | OPERACION_VAR | VARIABLE | NUMERO)",true);
+        gramatica.group("ESTRUC_SW_ERROR","(OPERACION_NUM | OPERACION_VAR | VARIABLE | NUMERO) SWITCH",true,
+                23,"ERROR SINTÁCTICO {}, LA DECLARACIÓN DE LA ESTRUCTURA NO ES CORRECTA [#,%]");
+        gramatica.group("ESTRUC_SW_ERROR","SWITCH IDENTIFICADOR",true,
+                24,"ERROR SINTÁCTICO {}, NO SE PUEDE EVALUAR UN IDENTIFICADOR [#,%]");
+      
+        gramatica.group("INT_SW","(VARIABLE | IMPRESION_DATOS)",true);
+        gramatica.group("CUERPO_SW","(VARIABLE | NUMERO | STRING) LLAVE_A INT_SW LLAVE_C",true);
+        gramatica.group("ESTRUC_SW_AG","ESTRUC_SW LLAVE_A CUERPO_SW LLAVE_C",true);
+        gramatica.group("ESTRUC_SW_AG_ERROR","ESTRUC_SW CUERPO_SW LLAVE_C",true,
+                25,"ERROR SINTÁCTICO {}, SE ESPERABA UNA LLAVE DE APERTURA [#,%]");
+        gramatica.group("ESTRUC_SW_AG_ERROR","ESTRUC_SW HLLAVE_A CUERPO_SW",true,
+                25,"ERROR SINTÁCTICO {}, SE ESPERABA UNA LLAVE DE CIERRE [#,%]");
+       
+        
+        
+        /* Eliminación de tipos de dao y operadores de asignación*/
+        gramatica.delete("TIPODATO",99,
+                "ERROR SINTÁCTICO {}, EL TIPO DE DATO NO SE ENCUENTRA EN UNA DECLARACIÓN [#,%]");
+        
+        /*Agrupación de identificadores y definición de parpametros*/
+        gramatica.group("VALOR", "IDENTIFICADOR",true);
+        
+        
         gramatica.show();
     }
 

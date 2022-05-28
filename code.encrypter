@@ -1,0 +1,10 @@
+	#Ejemplo de switch
+	switch $x {
+		"1" {
+			puts "Uno"
+		}
+		"2" {
+			puts "Uno"
+		}
+
+	}
